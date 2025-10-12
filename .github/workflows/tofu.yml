@@ -1,0 +1,120 @@
+name: OpenTofu CI/CD
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'tofu/**'
+      - '.github/workflows/tofu.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'tofu/**'
+      - '.github/workflows/tofu.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # Required for OIDC authentication
+  contents: read    # Required to checkout the repository
+  pull-requests: write  # Required to comment on PRs
+
+env:
+  AWS_REGION: ap-southeast-3
+  TOFU_VERSION: 1.10.6
+  TF_VAR_aws_region: ap-southeast-3
+  TF_VAR_environment: production
+
+jobs:
+  tofu:
+    name: OpenTofu
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./tofu
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: github-actions-tofu
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: ${{ env.TOFU_VERSION }}
+
+      - name: OpenTofu Format Check
+        id: fmt
+        run: tofu fmt -check -recursive
+        continue-on-error: true
+
+      - name: OpenTofu Init
+        id: init
+        run: tofu init
+
+      - name: OpenTofu Validate
+        id: validate
+        run: tofu validate -no-color
+
+      - name: OpenTofu Plan
+        id: plan
+        if: github.event_name == 'pull_request'
+        env:
+          TF_VAR_domain_name: ${{ vars.DOMAIN_NAME }}
+          TF_VAR_alternative_domain_names: ${{ vars.ALTERNATIVE_DOMAIN_NAMES }}
+          TF_VAR_cloudfront_price_class: ${{ vars.CLOUDFRONT_PRICE_CLASS }}
+          TF_VAR_enable_monitoring: ${{ vars.ENABLE_MONITORING }}
+          TF_VAR_alarm_email: ${{ secrets.ALARM_EMAIL }}
+        run: tofu plan -no-color -input=false
+        continue-on-error: true
+
+      - name: Comment PR with Plan
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          PLAN: ${{ steps.plan.outputs.stdout }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### OpenTofu Format and Style \`${{ steps.fmt.outcome }}\`
+            #### OpenTofu Initialization \`${{ steps.init.outcome }}\`
+            #### OpenTofu Validation \`${{ steps.validate.outcome }}\`
+            #### OpenTofu Plan \`${{ steps.plan.outcome }}\`
+
+            <details><summary>Show Plan</summary>
+
+            \`\`\`terraform
+            ${process.env.PLAN}
+            \`\`\`
+
+            </details>
+
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+      - name: OpenTofu Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+      - name: OpenTofu Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        env:
+          TF_VAR_domain_name: ${{ vars.DOMAIN_NAME }}
+          TF_VAR_alternative_domain_names: ${{ vars.ALTERNATIVE_DOMAIN_NAMES }}
+          TF_VAR_cloudfront_price_class: ${{ vars.CLOUDFRONT_PRICE_CLASS }}
+          TF_VAR_enable_monitoring: ${{ vars.ENABLE_MONITORING }}
+          TF_VAR_alarm_email: ${{ secrets.ALARM_EMAIL }}
+        run: tofu apply -auto-approve -input=false
