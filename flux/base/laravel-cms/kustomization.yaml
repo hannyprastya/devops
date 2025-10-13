@@ -4,6 +4,7 @@ kind: Kustomization
 namespace: hannyprastya
 
 resources:
+  - service-account.yaml
   - laravel-cms-configmap.yaml
   - laravel-cms-external-secret.yaml
   - laravel-cms-deployment.yaml
