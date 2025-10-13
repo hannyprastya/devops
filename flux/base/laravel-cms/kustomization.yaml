@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: hannyprastya
+
+resources:
+  - laravel-cms-configmap.yaml
+  - laravel-cms-external-secret.yaml
+  - laravel-cms-deployment.yaml
+  - laravel-cms-service.yaml
+  - redis-pvc.yaml
+  - redis-deployment.yaml
+  - redis-service.yaml
+  - ingress.yaml
+
+commonLabels:
+  app.kubernetes.io/name: laravel-cms
+  app.kubernetes.io/part-of: personal-laravel
+
+images:
+  - name: ghcr.io/hannyprastya/laravel-cms
+    newName: ghcr.io/hannyprastya/laravel-cms
+    newTag: latest-app

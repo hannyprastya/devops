@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: laravel-ingress
+  namespace: hannyprastya
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt"
+spec:
+  ingressClassName: haproxy
+  tls:
+    - hosts:
+        - portfolio.hannyprastya.id
+      secretName: laravel-cms-tls
+  rules:
+    - host: portfolio.hannyprastya.id
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: laravel-cms-service
+                port:
+                  number: 80
