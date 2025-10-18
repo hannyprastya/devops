@@ -70,6 +70,8 @@ resource "aws_route53_record" "caa" {
   records = [
     "0 issue \"amazon.com\"",
     "0 issuewild \"amazon.com\"",
+    "0 issue \"letsencrypt.org\"",
+    "0 issuewild \"letsencrypt.org\"",
   ]
 }
 
