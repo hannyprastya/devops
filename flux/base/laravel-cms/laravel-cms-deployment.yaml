@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: web
-          image: ghcr.io/hannyprastya/laravel-cms:latest-web
+          image: ghcr.io/hannyprastya/portfolio:main-web
           ports:
             - containerPort: 80
               name: http
