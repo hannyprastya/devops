@@ -243,7 +243,9 @@ resource "aws_s3_bucket_cors_configuration" "assets" {
     allowed_methods = ["PUT", "POST", "DELETE"]
     allowed_origins = [
       "https://${var.domain_name}",
-      "https://www.${var.domain_name}"
+      "https://www.${var.domain_name}",
+      "https://demo.${var.domain_name}",
+      "https://portfolio.${var.domain_name}"
     ]
     expose_headers  = ["ETag"]
     max_age_seconds = 3000
