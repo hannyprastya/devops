@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: web
-          image: ghcr.io/hannyprastya/portfolio:main-web
+          image: ghcr.io/hannyprastya/portfolio:main-9ceea5f-web
           ports:
             - containerPort: 80
               name: http
