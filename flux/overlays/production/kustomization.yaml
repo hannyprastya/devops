@@ -7,19 +7,16 @@ resources:
   - ../../base
   - laravel-hpa.yaml
 
-# Production-specific patches
 patches:
-  # Scale Laravel deployment to 3 replicas for production
   - target:
       kind: Deployment
       name: laravel-cms
     patch: |-
       - op: replace
         path: /spec/replicas
-        value: 3
+        value: 2
 
-# Production image tags (can be updated by CI/CD or Flux image automation)
 images:
-  - name: ghcr.io/hannyprastya/laravel-cms
-    newName: ghcr.io/hannyprastya/laravel-cms
-    newTag: latest-web
+  - name: ghcr.io/hannyprastya/portfolio
+    newName: ghcr.io/hannyprastya/portfolio
+    newTag: main-2ed63c0-web
